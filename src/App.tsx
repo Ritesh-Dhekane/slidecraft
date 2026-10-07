@@ -1,49 +1,114 @@
-// Temporary shell: lists the decks the local server sees and refreshes when a deck file changes.
-// The real editor UI is built from the Stitch design in TASK-006.
-import { useEffect, useState } from 'react'
+// Temporary deck viewer (until the editor UI in TASK-006): pick a deck from decks/, see its slides,
+// validation errors and fit warnings, and watch it update live when the file changes.
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { layoutDeck } from './layout/layout.ts'
+import { THEMES } from './layout/themes.ts'
+import { THEME_IDS, type ThemeId } from './schema/content.ts'
+import { parseDeck, type ParseResult } from './schema/parse.ts'
+import { SlideView } from './render/html/SlideView.tsx'
 
 type DeckInfo = { name: string; updated: string }
 
 export default function App() {
-  const [decks, setDecks] = useState<DeckInfo[] | null>(null)
+  const [decks, setDecks] = useState<DeckInfo[]>([])
+  const [current, setCurrent] = useState(() => new URLSearchParams(location.search).get('deck'))
+  const [parsed, setParsed] = useState<ParseResult | null>(null)
+  const [theme, setTheme] = useState<ThemeId | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [lastChange, setLastChange] = useState<string | null>(null)
 
-  useEffect(() => {
-    const load = () =>
+  const loadList = useCallback(
+    () =>
       fetch('/api/decks')
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`server answered ${r.status}`))))
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
         .then((list: DeckInfo[]) => {
           setDecks(list)
-          setError(null)
+          setCurrent((c) => c ?? list[0]?.name ?? null)
         })
-        .catch((err: Error) => setError(`Local server not reachable (${err.message}). Run npm run dev.`))
-    load()
-    const events = new EventSource('/api/events')
-    events.addEventListener('deck', (e) => {
-      setLastChange((JSON.parse((e as MessageEvent).data) as { name: string }).name)
-      load()
-    })
-    return () => events.close()
+        .catch(() => setError('Local server not reachable. Run npm run dev.')),
+    [],
+  )
+
+  const loadDeck = useCallback((name: string) => {
+    fetch(`/api/decks/${name}`)
+      .then((r) => r.json())
+      .then((json: unknown) => setParsed(parseDeck(json)))
+      .catch(() => setParsed({ ok: false, errors: ['The file is not valid JSON.'] }))
   }, [])
 
+  useEffect(() => {
+    loadList()
+    const events = new EventSource('/api/events')
+    events.addEventListener('deck', (e) => {
+      const { name } = JSON.parse((e as MessageEvent).data) as { name: string }
+      loadList()
+      setCurrent((c) => {
+        if (c === name) loadDeck(name)
+        return c
+      })
+    })
+    return () => events.close()
+  }, [loadList, loadDeck])
+
+  useEffect(() => {
+    if (current) loadDeck(current)
+  }, [current, loadDeck])
+
+  const laid = useMemo(
+    () => (parsed?.ok ? layoutDeck({ ...parsed.deck, theme: theme ?? parsed.deck.theme }) : null),
+    [parsed, theme],
+  )
+
   return (
-    <main className="mx-auto max-w-2xl p-8 font-sans text-slate-800">
-      <h1 className="text-2xl font-semibold">slidecraft</h1>
-      <p className="mt-1 text-slate-500">
-        Decks in the local <code>decks/</code> folder update here live.
-      </p>
-      {error && <p className="mt-6 rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
-      {lastChange && <p className="mt-4 text-sm text-indigo-600">Updated: {lastChange}</p>}
-      <ul className="mt-6 divide-y rounded-lg border">
-        {decks?.length === 0 && <li className="p-3 text-slate-500">No decks yet.</li>}
-        {decks?.map((d) => (
-          <li key={d.name} className="flex justify-between p-3">
-            <span>{d.name}</span>
-            <span className="text-sm text-slate-500">{new Date(d.updated).toLocaleString()}</span>
-          </li>
+    <main className="min-h-screen bg-slate-100 p-6 font-sans text-slate-800">
+      <header className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
+        <h1 className="mr-auto text-xl font-semibold">slidecraft preview</h1>
+        <select
+          className="rounded border bg-white px-2 py-1"
+          value={current ?? ''}
+          onChange={(e) => setCurrent(e.target.value)}
+          aria-label="Deck"
+        >
+          {decks.map((d) => (
+            <option key={d.name}>{d.name}</option>
+          ))}
+        </select>
+        <select
+          className="rounded border bg-white px-2 py-1"
+          value={theme ?? ''}
+          onChange={(e) => setTheme((e.target.value || null) as ThemeId | null)}
+          aria-label="Theme"
+        >
+          <option value="">Deck theme</option>
+          {THEME_IDS.map((id) => (
+            <option key={id} value={id}>
+              {THEMES[id].name}
+            </option>
+          ))}
+        </select>
+      </header>
+
+      <div className="mx-auto mt-6 flex max-w-5xl flex-col gap-6">
+        {error && <p className="rounded bg-red-50 p-3 text-red-700">{error}</p>}
+        {parsed && !parsed.ok && (
+          <ul className="rounded bg-red-50 p-3 font-mono text-sm text-red-700">
+            {parsed.errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        )}
+        {laid?.warnings.length ? (
+          <ul className="rounded bg-amber-50 p-3 text-sm text-amber-800">
+            {laid.warnings.map((w, i) => (
+              <li key={i}>
+                Slide {w.slide}: {w.message}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {laid?.deck.slides.map((slide, i) => (
+          <SlideView key={i} slide={slide} className="rounded-md shadow ring-1 ring-black/5" />
         ))}
-      </ul>
+      </div>
     </main>
   )
 }

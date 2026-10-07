@@ -13,7 +13,7 @@ import {
   type PositionedSlide,
   type TextElement,
 } from '../schema/positioned.ts'
-import { fitSize } from './text.ts'
+import { fitSize, textHeight } from './text.ts'
 import { THEMES, type Theme } from './themes.ts'
 
 const M = 0.6 // side margin
@@ -120,12 +120,27 @@ function card(ctx: Ctx, box: Box, accent?: string): Element[] {
 }
 
 // Text inside a card: heading, then body text and/or bullets, with an optional verdict pinned to the bottom.
-function cardContent(
-  ctx: Ctx,
-  box: Box,
-  c: { heading?: string; text?: string; bullets?: string[]; verdict?: string },
-  label: string,
-): Element[] {
+type CardText = { heading?: string; text?: string; bullets?: string[]; verdict?: string }
+
+// Height a card needs to show its content at full size (same spacing as cardContent).
+function cardHeight(c: CardText, w: number): number {
+  const body: Paragraph[] = [
+    ...(c.text ? [para(c.text)] : []),
+    ...(c.bullets ?? []).map((b) => para(b, { bullet: true })),
+  ]
+  return 0.6 + (c.heading ? 0.65 : 0) + (body.length ? textHeight(body, w - 0.6, 17, 1.25) : 0) + (c.verdict ? 0.6 : 0)
+}
+
+// Equal-height cards sized to the tallest content (at least 2.6 in), so short content doesn't leave
+// half-empty cards; long content still gets the full height and shrinks to fit.
+function fittedColumns(items: CardText[]): Box[] {
+  const boxes = columns(items.length)
+  const needed = Math.max(...items.map((c, i) => cardHeight(c, boxes[i].w)))
+  const h = Math.min(boxes[0].h, Math.max(2.6, needed + 0.15))
+  return boxes.map((b) => ({ ...b, h }))
+}
+
+function cardContent(ctx: Ctx, box: Box, c: CardText, label: string): Element[] {
   const pad = 0.3
   const inner = { x: box.x + pad, w: box.w - 2 * pad }
   let y = box.y + pad
@@ -286,7 +301,7 @@ function layoutSlide(slide: Slide, ctx: Ctx): PositionedSlide {
       ])
 
     case 'two-column': {
-      const [l, r] = columns(2)
+      const [l, r] = fittedColumns([slide.left, slide.right])
       return body([
         ...card(ctx, l, c.primary),
         ...cardContent(ctx, l, slide.left, 'The left column'),
@@ -296,7 +311,9 @@ function layoutSlide(slide: Slide, ctx: Ctx): PositionedSlide {
     }
 
     case 'comparison': {
-      const boxes = columns(slide.items.length)
+      const boxes = fittedColumns(
+        slide.items.map((i) => ({ heading: i.heading, bullets: i.points, verdict: i.verdict })),
+      )
       return body(
         slide.items.flatMap((item, i) => [
           ...card(ctx, boxes[i], c.chart[i % c.chart.length]),
