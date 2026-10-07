@@ -1,0 +1,45 @@
+{
+  "name": "slidecraft",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n ui,api -c cyan,magenta \"vite\" \"tsx watch server/index.ts\"",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "lint": "oxlint",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "slidecraft": "tsx bin/slidecraft.ts",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^10.0.5",
+    "oxlint": "^1.81.0",
+    "prettier": "^3.9.9",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^4"
+  },
+  "license": "MIT",
+  "description": "Open-source AI presentation maker: one deck schema rendered to an HTML preview and a fully editable PowerPoint file.",
+  "bin": {
+    "slidecraft": "bin/slidecraft.ts"
+  },
+  "overrides": {
+    "shell-quote": "^1.12.0"
+  }
+}
