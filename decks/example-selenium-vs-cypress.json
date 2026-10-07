@@ -1,0 +1,117 @@
+{
+  "title": "Selenium vs Cypress",
+  "theme": "slate",
+  "slides": [
+    {
+      "layout": "title",
+      "kicker": "MCA Project · Software Testing",
+      "title": "Selenium vs Cypress: Choosing an End-to-End Testing Framework",
+      "subtitle": "Architecture, speed, reliability and when to use each",
+      "notes": "Introduce the project and why the choice of E2E tool matters."
+    },
+    {
+      "layout": "bullets",
+      "kicker": "Context",
+      "title": "Why end-to-end testing matters",
+      "bullets": [
+        "Catches integration bugs unit tests miss",
+        {
+          "text": "Simulates real user journeys",
+          "sub": ["Login, checkout, search", "Across browsers and screen sizes"]
+        },
+        "Protects releases in CI/CD pipelines",
+        "Documents expected behaviour for the team"
+      ]
+    },
+    {
+      "layout": "section",
+      "kicker": "Part 1",
+      "title": "How the two tools work",
+      "subtitle": "Two very different architectures"
+    },
+    {
+      "layout": "two-column",
+      "title": "Architecture at a glance",
+      "left": {
+        "heading": "Selenium WebDriver",
+        "text": "Drives the browser from outside through the W3C WebDriver protocol.",
+        "bullets": ["Any language: Java, Python, C#, JS", "Every major browser", "Selenium Grid for parallel runs"]
+      },
+      "right": {
+        "heading": "Cypress",
+        "text": "Runs inside the browser, in the same loop as the app under test.",
+        "bullets": ["JavaScript / TypeScript only", "Automatic waiting and retries", "Time-travel debugging"]
+      }
+    },
+    {
+      "layout": "comparison",
+      "kicker": "Head to head",
+      "title": "Strengths and trade-offs",
+      "items": [
+        {
+          "heading": "Selenium",
+          "points": ["Cross-browser including Safari", "Mature ecosystem and Grid", "Multi-language teams"],
+          "verdict": "Best for broad, enterprise suites"
+        },
+        {
+          "heading": "Cypress",
+          "points": ["Fast feedback while developing", "Fewer flaky waits", "Great debugging experience"],
+          "verdict": "Best for modern JS front-ends"
+        }
+      ]
+    },
+    {
+      "layout": "table",
+      "title": "Feature comparison",
+      "columns": ["Feature", "Selenium", "Cypress"],
+      "rows": [
+        ["Languages", "Java, Python, C#, JS", "JavaScript / TypeScript"],
+        ["Browsers", "Chrome, Firefox, Edge, Safari", "Chromium, Firefox, WebKit (experimental)"],
+        ["Waiting", "Explicit waits", "Automatic retries"],
+        ["Parallel runs", "Selenium Grid", "Cypress Cloud / CI sharding"],
+        ["Debugging", "Logs, screenshots", "Time travel, snapshots"]
+      ],
+      "caption": "Summary of the official documentation, 2026."
+    },
+    {
+      "layout": "chart",
+      "title": "Average suite run time (50 tests)",
+      "chart": {
+        "type": "column",
+        "labels": ["Login", "Search", "Checkout", "Profile"],
+        "series": [
+          { "name": "Selenium", "values": [42, 55, 78, 36] },
+          { "name": "Cypress", "values": [28, 31, 49, 22] }
+        ],
+        "unit": "s"
+      },
+      "takeaways": ["Cypress was about 35% faster on our app", "The gap is biggest on long, async flows"]
+    },
+    {
+      "layout": "stats",
+      "title": "Our test project in numbers",
+      "stats": [
+        { "value": "120", "label": "end-to-end tests written" },
+        { "value": "35%", "label": "faster runs with Cypress" },
+        { "value": "4", "label": "browsers covered by Selenium" }
+      ]
+    },
+    {
+      "layout": "image-text",
+      "title": "The CI pipeline we used",
+      "image": {
+        "alt": "Diagram of the CI pipeline",
+        "prompt": "Simple flow: commit, build, unit tests, E2E tests, deploy"
+      },
+      "text": "Both suites run on every pull request in GitHub Actions.",
+      "bullets": ["Cypress on every commit for fast feedback", "Selenium nightly across all browsers"]
+    },
+    {
+      "layout": "quote",
+      "quote": "Pick the tool that matches your team and your browsers, not the one with the most stars.",
+      "author": "Project conclusion",
+      "role": "MCA Software Testing, 2026"
+    },
+    { "layout": "closing", "title": "Thank you", "subtitle": "Questions? The code and slides are on GitHub." }
+  ]
+}
