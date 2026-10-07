@@ -7,7 +7,12 @@ import { THEME_IDS, type ThemeId } from './schema/content.ts'
 import { parseDeck, type ParseResult } from './schema/parse.ts'
 import { SlideView } from './render/html/SlideView.tsx'
 
+import example from '../decks/example-selenium-vs-cypress.json'
+
 type DeckInfo = { name: string; updated: string }
+
+// Without the local server (e.g. on GitHub Pages) the bundled example deck is shown instead.
+const EXAMPLE = 'example-selenium-vs-cypress'
 
 export default function App() {
   const [decks, setDecks] = useState<DeckInfo[]>([])
@@ -18,26 +23,33 @@ export default function App() {
 
   const loadList = useCallback(
     () =>
-      fetch('/api/decks')
+      fetch(`${import.meta.env.BASE_URL}api/decks`)
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
         .then((list: DeckInfo[]) => {
           setDecks(list)
           setCurrent((c) => c ?? list[0]?.name ?? null)
         })
-        .catch(() => setError('Local server not reachable. Run npm run dev.')),
+        .catch(() => {
+          setDecks([{ name: EXAMPLE, updated: '' }])
+          setCurrent((c) => c ?? EXAMPLE)
+          setError('No local server: showing the example deck. Run npm run dev locally to work on your own decks.')
+        }),
     [],
   )
 
   const loadDeck = useCallback((name: string) => {
-    fetch(`/api/decks/${name}`)
+    fetch(`${import.meta.env.BASE_URL}api/decks/${name}`)
+      .then((r) => (r.ok ? r : Promise.reject(new Error(String(r.status)))))
       .then((r) => r.json())
       .then((json: unknown) => setParsed(parseDeck(json)))
-      .catch(() => setParsed({ ok: false, errors: ['The file is not valid JSON.'] }))
+      .catch(() =>
+        setParsed(name === EXAMPLE ? parseDeck(example) : { ok: false, errors: ['Could not load this deck.'] }),
+      )
   }, [])
 
   useEffect(() => {
     loadList()
-    const events = new EventSource('/api/events')
+    const events = new EventSource(`${import.meta.env.BASE_URL}api/events`)
     events.addEventListener('deck', (e) => {
       const { name } = JSON.parse((e as MessageEvent).data) as { name: string }
       loadList()
@@ -101,7 +113,7 @@ export default function App() {
       </header>
 
       <div className="mx-auto mt-6 flex max-w-5xl flex-col gap-6">
-        {error && <p className="rounded bg-red-50 p-3 text-red-700">{error}</p>}
+        {error && <p className="rounded bg-amber-50 p-3 text-amber-800">{error}</p>}
         {parsed && !parsed.ok && (
           <ul className="rounded bg-red-50 p-3 font-mono text-sm text-red-700">
             {parsed.errors.map((e) => (
