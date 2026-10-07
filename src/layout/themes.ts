@@ -16,6 +16,7 @@ export type Theme = {
     accent: string // kickers, highlights
     emphasis: string // big numbers
     onPrimary: string
+    accentOnPrimary: string // labels on primary-coloured backgrounds
     border: string
     stripe: string // alternate table rows
     chart: string[]
@@ -36,6 +37,7 @@ export const THEMES: Record<ThemeId, Theme> = {
       accent: '#5F3ADD',
       emphasis: '#10137A',
       onPrimary: '#FFFFFF',
+      accentOnPrimary: '#C9BCFF',
       border: '#C7C5D4',
       stripe: '#F7F9FB',
       chart: ['#2A2F8F', '#7857F8', '#2BB6A3', '#F2A23A'],
@@ -54,6 +56,7 @@ export const THEMES: Record<ThemeId, Theme> = {
       accent: '#B8A4FF',
       emphasis: '#989EFF',
       onPrimary: '#FFFFFF',
+      accentOnPrimary: '#D4C8FF',
       border: '#2C3550',
       stripe: '#151B2A',
       chart: ['#989EFF', '#B8A4FF', '#4FD1BE', '#F6B95C'],

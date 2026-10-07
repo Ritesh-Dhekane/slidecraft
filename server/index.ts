@@ -3,7 +3,7 @@
 import { watch } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
-import { DECKS_DIR, listDecks, readDeck, writeDeck } from './decks.ts'
+import { DECKS_DIR, deleteDeck, listDecks, readDeck, writeDeck } from './decks.ts'
 
 const PORT = Number(process.env.SLIDECRAFT_PORT ?? 5175)
 const clients = new Set<ServerResponse>()
@@ -28,6 +28,10 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
   if (deck && req.method === 'PUT') {
     await writeDeck(deck, await readBody(req))
     return send(res, 200, { saved: deck })
+  }
+  if (deck && req.method === 'DELETE') {
+    await deleteDeck(deck)
+    return send(res, 200, { deleted: deck })
   }
   if (url.pathname === '/api/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' })

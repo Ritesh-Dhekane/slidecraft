@@ -250,7 +250,7 @@ function layoutSlide(slide: Slide, ctx: Ctx): PositionedSlide {
       return {
         background: c.primary,
         elements: [
-          { kind: 'shape', shape: 'rect', x: M + 0.1, y: 3.0, w: 0.9, h: 0.07, fill: c.accent },
+          { kind: 'shape', shape: 'rect', x: M + 0.1, y: 3.0, w: 0.9, h: 0.07, fill: c.accentOnPrimary },
           text(
             ctx,
             { x: M + 0.1, y: 2.1, w: 10, h: 0.6 },
@@ -258,7 +258,7 @@ function layoutSlide(slide: Slide, ctx: Ctx): PositionedSlide {
             {
               max: 14,
               bold: true,
-              color: c.accent,
+              color: c.accentOnPrimary,
               letterSpacing: 2,
               valign: 'bottom',
               role: 'kicker',

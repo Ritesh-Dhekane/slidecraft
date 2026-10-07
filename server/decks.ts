@@ -1,5 +1,5 @@
 // The decks folder: one JSON file per deck (decks/<name>.json), written by coding agents, the CLI or the UI.
-import { readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 export const DECKS_DIR = resolve(process.env.SLIDECRAFT_DECKS ?? 'decks')
@@ -24,4 +24,8 @@ export async function readDeck(name: string): Promise<unknown> {
 
 export async function writeDeck(name: string, deck: unknown): Promise<void> {
   await writeFile(deckPath(name), JSON.stringify(deck, null, 2) + '\n')
+}
+
+export async function deleteDeck(name: string): Promise<void> {
+  await rm(deckPath(name))
 }

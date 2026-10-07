@@ -1,139 +1,64 @@
-// Temporary deck viewer (until the editor UI in TASK-006): pick a deck from decks/, see its slides,
-// validation errors and fit warnings, and watch it update live when the file changes.
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { layoutDeck } from './layout/layout.ts'
-import { THEMES } from './layout/themes.ts'
-import { THEME_IDS, type ThemeId } from './schema/content.ts'
-import { parseDeck, type ParseResult } from './schema/parse.ts'
-import { SlideView } from './render/html/SlideView.tsx'
+// slidecraft app: home (deck list + prompt) and the editor, with settings as a dialog.
+import { useCallback, useEffect, useState } from 'react'
+import { listDecks, onDeckChange, type DeckMeta } from './ui/decks.ts'
+import { Editor } from './ui/Editor.tsx'
+import { onOpenSettings } from './ui/events.ts'
+import { Home, type GenerateRequest } from './ui/Home.tsx'
+import { applyAppearance } from './ui/prefs.ts'
+import { useRoute } from './ui/router.ts'
+import { Settings } from './ui/Settings.tsx'
+import { Shell } from './ui/Shell.tsx'
 
-import example from '../decks/example-selenium-vs-cypress.json'
-
-type DeckInfo = { name: string; updated: string }
-
-// Without the local server (e.g. on GitHub Pages) the bundled example deck is shown instead.
-const EXAMPLE = 'example-selenium-vs-cypress'
+applyAppearance()
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyAppearance)
 
 export default function App() {
-  const [decks, setDecks] = useState<DeckInfo[]>([])
-  const [current, setCurrent] = useState(() => new URLSearchParams(location.search).get('deck'))
-  const [parsed, setParsed] = useState<ParseResult | null>(null)
-  const [theme, setTheme] = useState<ThemeId | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const route = useRoute()
+  const [decks, setDecks] = useState<DeckMeta[] | null>(null)
+  const [query, setQuery] = useState('')
+  const [settings, setSettings] = useState(false)
 
-  const loadList = useCallback(
-    () =>
-      fetch(`${import.meta.env.BASE_URL}api/decks`)
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-        .then((list: DeckInfo[]) => {
-          setDecks(list)
-          setCurrent((c) => c ?? list[0]?.name ?? null)
-        })
-        .catch(() => {
-          setDecks([{ name: EXAMPLE, updated: '' }])
-          setCurrent((c) => c ?? EXAMPLE)
-          setError('No local server: showing the example deck. Run npm run dev locally to work on your own decks.')
-        }),
-    [],
-  )
-
-  const loadDeck = useCallback((name: string) => {
-    fetch(`${import.meta.env.BASE_URL}api/decks/${name}`)
-      .then((r) => (r.ok ? r : Promise.reject(new Error(String(r.status)))))
-      .then((r) => r.json())
-      .then((json: unknown) => setParsed(parseDeck(json)))
-      .catch(() =>
-        setParsed(name === EXAMPLE ? parseDeck(example) : { ok: false, errors: ['Could not load this deck.'] }),
-      )
+  const refresh = useCallback(() => {
+    void listDecks().then(setDecks)
   }, [])
 
   useEffect(() => {
-    loadList()
-    const events = new EventSource(`${import.meta.env.BASE_URL}api/events`)
-    events.addEventListener('deck', (e) => {
-      const { name } = JSON.parse((e as MessageEvent).data) as { name: string }
-      loadList()
-      setCurrent((c) => {
-        if (c === name) loadDeck(name)
-        return c
-      })
-    })
-    return () => events.close()
-  }, [loadList, loadDeck])
+    refresh()
+    const off = onDeckChange(refresh)
+    const offSettings = onOpenSettings(() => setSettings(true))
+    return () => {
+      off()
+      offSettings()
+    }
+  }, [refresh])
 
-  useEffect(() => {
-    if (current) loadDeck(current)
-  }, [current, loadDeck])
+  // Gemini generation arrives in TASK-007; until then the prompt opens settings.
+  const generate = (_r: GenerateRequest) => setSettings(true)
 
-  const laid = useMemo(
-    () => (parsed?.ok ? layoutDeck({ ...parsed.deck, theme: theme ?? parsed.deck.theme }) : null),
-    [parsed, theme],
+  const lastDeck = route.name === 'deck' ? route.id : (decks?.[0]?.id ?? null)
+  const title =
+    route.name === 'deck'
+      ? ((decks?.find((d) => d.id === route.id)?.deck as { title?: string } | undefined)?.title ?? route.id)
+      : null
+  const crumb = (
+    <span>
+      <a href="#/" className="hover:text-ink">
+        Decks
+      </a>
+      {title && <span className="text-ink"> / {title}</span>}
+    </span>
   )
 
   return (
-    <main className="min-h-screen bg-slate-100 p-6 font-sans text-slate-800">
-      <header className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-xl font-semibold">slidecraft preview</h1>
-        <select
-          className="rounded border bg-white px-2 py-1"
-          value={current ?? ''}
-          onChange={(e) => setCurrent(e.target.value)}
-          aria-label="Deck"
-        >
-          {decks.map((d) => (
-            <option key={d.name}>{d.name}</option>
-          ))}
-        </select>
-        <select
-          className="rounded border bg-white px-2 py-1"
-          value={theme ?? ''}
-          onChange={(e) => setTheme((e.target.value || null) as ThemeId | null)}
-          aria-label="Theme"
-        >
-          <option value="">Deck theme</option>
-          {THEME_IDS.map((id) => (
-            <option key={id} value={id}>
-              {THEMES[id].name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          disabled={!laid}
-          onClick={async () => {
-            if (!laid) return
-            // pptxgenjs is large, so it's only downloaded when someone exports.
-            const { buildPptx } = await import('./render/pptx/exportPptx.ts')
-            await buildPptx(laid.deck).writeFile({ fileName: `${current ?? 'deck'}.pptx` })
-          }}
-          className="rounded bg-indigo-900 px-3 py-1 font-medium text-white disabled:opacity-40"
-        >
-          Export PPTX
-        </button>
-      </header>
-
-      <div className="mx-auto mt-6 flex max-w-5xl flex-col gap-6">
-        {error && <p className="rounded bg-amber-50 p-3 text-amber-800">{error}</p>}
-        {parsed && !parsed.ok && (
-          <ul className="rounded bg-red-50 p-3 font-mono text-sm text-red-700">
-            {parsed.errors.map((e) => (
-              <li key={e}>{e}</li>
-            ))}
-          </ul>
+    <>
+      <Shell crumb={crumb} query={query} onQuery={setQuery} lastDeck={lastDeck}>
+        {route.name === 'deck' ? (
+          <Editor key={route.id} id={route.id} />
+        ) : (
+          <Home decks={decks} query={query} onChanged={refresh} onGenerate={generate} busy={false} />
         )}
-        {laid?.warnings.length ? (
-          <ul className="rounded bg-amber-50 p-3 text-sm text-amber-800">
-            {laid.warnings.map((w, i) => (
-              <li key={i}>
-                Slide {w.slide}: {w.message}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {laid?.deck.slides.map((slide, i) => (
-          <SlideView key={i} slide={slide} className="rounded-md shadow ring-1 ring-black/5" />
-        ))}
-      </div>
-    </main>
+      </Shell>
+      {settings && <Settings onClose={() => setSettings(false)} />}
+    </>
   )
 }

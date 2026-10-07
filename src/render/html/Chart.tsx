@@ -41,15 +41,20 @@ export function Chart({ el }: { el: ChartElement }) {
     const r = Math.min(W, H - legendH) / 2 - 8
     const cx = W / 2
     const cy = legendH + (H - legendH) / 2
-    let angle = -Math.PI / 2
+    // Start/end angle of each slice, starting at 12 o'clock.
+    const ends = values.reduce<number[]>(
+      (acc, v) => [...acc, (acc.at(-1) ?? 0) + (Math.max(0, v) / total) * Math.PI * 2],
+      [],
+    )
     return (
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" role="img" aria-label={el.labels.join(', ')}>
         {legend}
-        {values.map((v, i) => {
-          const a = (Math.max(0, v) / total) * Math.PI * 2
-          const [x1, y1] = [cx + r * Math.cos(angle), cy + r * Math.sin(angle)]
-          angle += a
-          const [x2, y2] = [cx + r * Math.cos(angle), cy + r * Math.sin(angle)]
+        {values.map((_, i) => {
+          const from = -Math.PI / 2 + (ends[i - 1] ?? 0)
+          const to = -Math.PI / 2 + ends[i]
+          const a = to - from
+          const [x1, y1] = [cx + r * Math.cos(from), cy + r * Math.sin(from)]
+          const [x2, y2] = [cx + r * Math.cos(to), cy + r * Math.sin(to)]
           return (
             <path
               key={i}

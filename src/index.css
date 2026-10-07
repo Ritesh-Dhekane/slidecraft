@@ -1,5 +1,118 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/hanken-grotesk';
+@import '@fontsource-variable/jetbrains-mono';
+
+/* "Studio Deck" design system (Stitch export, rtsh-brain docs/slidecraft/design). Colours are CSS
+   variables so the dark theme only swaps values; Tailwind utilities read them (bg-canvas, text-ink…). */
+@theme {
+  --font-sans: 'Hanken Grotesk Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-rail: var(--c-rail);
+  --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
+  --color-ink: var(--c-ink);
+  --color-ink-2: var(--c-ink-2);
+  --color-ink-3: var(--c-ink-3);
+  --color-primary: var(--c-primary);
+  --color-primary-hover: var(--c-primary-hover);
+  --color-primary-ink: var(--c-primary-ink);
+  --color-on-primary: #ffffff;
+  --color-ai: var(--c-ai);
+  --color-ai-soft: var(--c-ai-soft);
+  --color-ai-ink: var(--c-ai-ink);
+  --color-ok: var(--c-ok);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+  --color-warn-soft: var(--c-warn-soft);
+  --color-warn-ink: var(--c-warn-ink);
+}
+
+:root {
+  --c-canvas: #f8fafc;
+  --c-surface: #ffffff;
+  --c-rail: #f1f5f9;
+  --c-line: #e2e8f0;
+  --c-line-strong: #cbd5e1;
+  --c-ink: #0f172a;
+  --c-ink-2: #475569;
+  --c-ink-3: #576378;
+  --c-primary: #2a2f8f;
+  --c-primary-ink: #2a2f8f;
+  --c-primary-hover: #1e2266;
+  --c-ai: #7c5cfc;
+  --c-ai-soft: #f3e8ff;
+  --c-ai-ink: #6b21a8;
+  --c-ok: #16a34a;
+  --c-danger: #b91c1c;
+  --c-danger-soft: #fef2f2;
+  --c-warn-soft: #fffbeb;
+  --c-warn-ink: #92400e;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --c-canvas: #0b1020;
+  --c-surface: #131a2c;
+  --c-rail: #0f1527;
+  --c-line: #243049;
+  --c-line-strong: #34425f;
+  --c-ink: #e8ecf5;
+  --c-ink-2: #a8b2c7;
+  --c-ink-3: #8390a8;
+  --c-primary: #4c52c9;
+  --c-primary-ink: #aeb2ff;
+  --c-primary-hover: #5d63d8;
+  --c-ai: #a28bff;
+  --c-ai-soft: #2a2148;
+  --c-ai-ink: #d6c9ff;
+  --c-ok: #4ade80;
+  --c-danger: #f87171;
+  --c-danger-soft: #3a1717;
+  --c-warn-soft: #3a2a10;
+  --c-warn-ink: #fcd34d;
+  color-scheme: dark;
+}
 
 body {
   margin: 0;
+  background: var(--c-canvas);
+  color: var(--c-ink);
+  font-family: var(--font-sans);
+}
+
+/* Shared component styles (Tailwind v4 custom utilities, so they can build on each other). */
+@utility btn {
+  @apply inline-flex h-9 items-center justify-center gap-2 rounded px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn border border-primary-hover bg-primary text-on-primary hover:bg-primary-hover;
+}
+@utility btn-ai {
+  @apply btn bg-ai text-white shadow-[0_0_0_4px_rgb(124_92_252/0.08)] hover:brightness-110;
+}
+@utility btn-ghost {
+  @apply btn border border-line text-ink-2 hover:bg-rail hover:text-ink;
+}
+@utility icon-btn {
+  @apply inline-flex size-9 items-center justify-center rounded text-ink-2 transition-colors hover:bg-rail hover:text-ink disabled:opacity-40;
+}
+@utility field {
+  @apply h-9 w-full rounded border border-line-strong bg-surface px-2.5 text-sm text-ink outline-none focus:border-primary;
+}
+@utility label-code {
+  @apply font-mono text-[11px] font-medium tracking-wider text-ink-3 uppercase;
+}
+@utility panel {
+  @apply rounded-lg border border-line bg-surface;
+}
+@utility chip {
+  @apply inline-flex h-8 items-center gap-1.5 rounded border border-line bg-surface px-2.5 text-[13px] text-ink-2 hover:border-line-strong hover:text-ink;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
 }
