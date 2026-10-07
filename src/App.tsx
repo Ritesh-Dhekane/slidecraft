@@ -85,6 +85,19 @@ export default function App() {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          disabled={!laid}
+          onClick={async () => {
+            if (!laid) return
+            // pptxgenjs is large, so it's only downloaded when someone exports.
+            const { buildPptx } = await import('./render/pptx/exportPptx.ts')
+            await buildPptx(laid.deck).writeFile({ fileName: `${current ?? 'deck'}.pptx` })
+          }}
+          className="rounded bg-indigo-900 px-3 py-1 font-medium text-white disabled:opacity-40"
+        >
+          Export PPTX
+        </button>
       </header>
 
       <div className="mx-auto mt-6 flex max-w-5xl flex-col gap-6">
