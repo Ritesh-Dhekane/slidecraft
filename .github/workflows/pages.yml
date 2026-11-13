@@ -1,4 +1,4 @@
-e: Deploy Pages
+name: Deploy Pages
 
 on:
   push:
